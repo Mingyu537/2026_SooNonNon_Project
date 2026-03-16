@@ -1,55 +1,72 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
 
-st.title("Streamlit 요소 예시 페이지")
+# 페이지 설정
+st.set_page_config(page_title="자기소개", page_icon="👋", layout="wide")
 
-st.header("1. 텍스트 요소")
-st.write("일반 텍스트")
-st.markdown("**마크다운** 텍스트")
+# 약간의 스타일
+st.markdown("""
+<style>
+    .big-number {
+        font-size: 28px;
+        font-weight: 800;
+        color: #1f6feb;
+        line-height: 1.1;
+    }
+    .subtext {
+        color: #6e7781;
+        font-size: 14px;
+        margin-top: -8px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-st.header("2. 위젯")
-if st.button("버튼 클릭"):
-    st.write("버튼이 클릭되었습니다!")
+# ===== 기본 정보 =====
+st.title("👋 나를 소개합니다")
+st.caption("간단하지만 정확하게!")
 
-name = st.text_input("이름 입력")
-st.write(f"안녕하세요, {name}!")
+# 좌우 레이아웃
+left, right = st.columns([1, 2])
 
-age = st.slider("나이", 0, 100, 25)
-st.write(f"선택한 나이: {age}")
+with left:
+    # 프로필 사진이 있으면 넣어보자 (없으면 오류 없이 넘어감)
+    try:
+        st.image("profile.jpg", use_column_width=True)
+    except Exception:
+        st.info("프로필 사진은 **profile.jpg**로 프로젝트 폴더에 넣으면 자동으로 보여줘요 :)")
 
-option = st.selectbox("선택하세요", ["옵션1", "옵션2", "옵션3"])
-st.write(f"선택한 옵션: {option}")
+with right:
+    name = "민규"
+    age = "23"     # 숫자만 원하면 숫자로 써도 OK
+    major = "사범대학 수학교육과"
+    school_year = "4학년"   # 상황에 맞게 변경
 
-st.header("3. 레이아웃")
-with st.sidebar:
-    st.write("사이드바")
+    st.markdown(f"**이름** : {name}")
+    st.markdown(f"**나이** : {age}세")
+    st.markdown(f"**소속** : {major}")
+    st.markdown(f"**학년** : {school_year}")
 
-col1, col2 = st.columns(2)
-with col1:
-    st.write("컬럼 1")
-with col2:
-    st.write("컬럼 2")
+# ===== 자기소개 =====
+st.header("🙋‍♂️ About Me")
+st.write("""
+저는 수학교육을 전공하면서 **학생들을 효율적으로 가르치는 방법**에 관심이 많아요.
+특히 **에듀테크 / 디지털 코스웨어**를 활용해 수업의 질을 끌어올리는 것에 관심이 큽니다.
+""")
 
-tab1, tab2 = st.tabs(["탭1", "탭2"])
-with tab1:
-    st.write("탭1 내용")
-with tab2:
-    st.write("탭2 내용")
+# ===== 관심사 & 취미 =====
+st.header("🎯 관심 분야")
+st.write("""
+- 수업 설계(교수설계) + 학습 효과 분석
+- 에듀테크 도구를 활용한 수업 자동화/개선
+- 디지털 콘텐츠 제작(예: 인터랙티브 자료)
+""")
 
-st.header("4. 데이터 표시")
-df = pd.DataFrame(np.random.randn(10, 3), columns=['A', 'B', 'C'])
-st.dataframe(df)
-st.line_chart(df)
+st.header("🧩 취미")
+st.write("""
+- 운동/헬스  
+- 여행/카페 탐방  
+- (옵션) 개발/데이터 분석/알고리즘 공부  
+""")
 
-st.header("5. 미디어")
-st.image("https://via.placeholder.com/300", caption="샘플 이미지")
-
-st.header("6. 상태 관리")
-if 'count' not in st.session_state:
-    st.session_state.count = 0
-
-if st.button("카운트 증가"):
-    st.session_state.count += 1
-
-st.write(f"카운트: {st.session_state.count}")
+# ===== 끝 =====
+st.divider()
+st.write("끝! 👀 필요하면 더 디테일한 섹션(프로젝트/역량/연락처)도 추가할 수 있어요.")
