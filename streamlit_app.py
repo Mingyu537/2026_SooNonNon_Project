@@ -1,514 +1,701 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="자기소개 페이지",
+    page_title="iPhone 스타일 랜딩",
     page_icon="",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+    --bg: #f5f5f7;
+    --text: #1d1d1f;
+    --sub: #6e6e73;
+    --blue: #0071e3;
+    --white: #ffffff;
+    --line: rgba(0,0,0,0.08);
+    --panel: #fbfbfd;
+    --dark: #000000;
+}
 
 html, body, [class*="css"] {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Display",
                  "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    color: var(--text);
+}
+
+body {
+    background: var(--bg);
 }
 
 .stApp {
-    background-color: #f5f5f7;
-    color: #1d1d1f;
+    background: var(--bg);
 }
 
-/* 전체 폭 조정 */
+header[data-testid="stHeader"] {
+    background: transparent;
+}
+
+div[data-testid="stToolbar"] {
+    visibility: hidden;
+    height: 0;
+    position: fixed;
+}
+
+#MainMenu, footer {
+    visibility: hidden;
+}
+
 .block-container {
-    padding-top: 0rem;
-    padding-bottom: 4rem;
-    max-width: 1400px;
-    padding-left: 0;
-    padding-right: 0;
+    max-width: 100%;
+    padding: 0;
 }
 
-/* Streamlit 기본 요소 여백 정리 */
-div[data-testid="stVerticalBlock"] > div {
-    gap: 0;
+section[data-testid="stSidebar"] {
+    display: none !important;
 }
 
-/* 상단 네비 */
-.top-nav {
+/* ---------- global nav ---------- */
+.global-nav {
     position: sticky;
     top: 0;
-    z-index: 999;
-    width: 100%;
-    background: rgba(251, 251, 253, 0.72);
+    z-index: 9999;
+    height: 44px;
+    background: rgba(251, 251, 253, 0.78);
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
-.nav-inner {
-    max-width: 1100px;
-    margin: 0 auto;
+.global-nav-inner {
+    max-width: 1024px;
     height: 44px;
+    margin: 0 auto;
+    padding: 0 18px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 24px;
-    font-size: 0.92rem;
-    color: #1d1d1f;
+    gap: 18px;
+    font-size: 12px;
+    color: var(--text);
 }
 
-.nav-left {
-    font-size: 1.2rem;
+.global-nav-left,
+.global-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.global-nav .apple {
+    font-size: 16px;
+    font-weight: 700;
+    margin-right: 4px;
+}
+
+.global-nav a {
+    color: var(--text);
+    text-decoration: none;
+    opacity: 0.85;
+    white-space: nowrap;
+}
+
+/* ---------- local nav ---------- */
+.local-nav {
+    height: 52px;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.local-nav-inner {
+    max-width: 1100px;
+    height: 52px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.local-title {
+    font-size: 21px;
     font-weight: 700;
     letter-spacing: -0.02em;
 }
 
-.nav-menu {
+.local-links {
     display: flex;
-    gap: 28px;
-    color: #1d1d1f;
-    opacity: 0.88;
+    gap: 18px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
 }
 
-.nav-menu span {
-    cursor: default;
+.local-links a {
+    font-size: 12px;
+    color: #424245;
+    text-decoration: none;
 }
 
-/* 공통 섹션 */
-.section {
-    padding: 72px 24px;
+.buy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: var(--blue);
+    color: white !important;
+    font-size: 12px !important;
+    font-weight: 600;
 }
 
-.section-dark {
-    background: #000;
-    color: #f5f5f7;
-}
-
-.section-light {
-    background: #f5f5f7;
-    color: #1d1d1f;
-}
-
-.section-white {
-    background: #ffffff;
-    color: #1d1d1f;
-}
-
-.container {
-    max-width: 1100px;
+/* ---------- containers ---------- */
+.wrap {
+    max-width: 1400px;
     margin: 0 auto;
 }
 
-/* 히어로 */
-.hero {
-    text-align: center;
-    padding: 100px 24px 72px 24px;
-    background: linear-gradient(180deg, #fbfbfd 0%, #f5f5f7 100%);
+.section {
+    padding: 20px 12px;
 }
 
-.eyebrow {
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: #6e6e73;
-    margin-bottom: 10px;
+.section-tight {
+    padding-top: 12px;
+}
+
+.hero {
+    background: linear-gradient(180deg, #f7f7fa 0%, #ececf1 100%);
+    border-radius: 0 0 32px 32px;
+    overflow: hidden;
+}
+
+.hero-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 72px 24px 40px;
+    text-align: center;
+}
+
+.hero-eyebrow {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 12px;
 }
 
 .hero-title {
-    font-size: clamp(2.8rem, 6vw, 5rem);
-    line-height: 1.05;
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    margin-bottom: 14px;
+    font-size: clamp(44px, 9vw, 112px);
+    line-height: 0.95;
+    font-weight: 900;
+    letter-spacing: -0.06em;
+    margin: 0;
 }
 
-.hero-subtitle {
-    font-size: clamp(1.1rem, 2.2vw, 1.7rem);
+.hero-sub {
+    margin-top: 18px;
+    font-size: clamp(19px, 2.2vw, 28px);
+    line-height: 1.25;
     color: #424245;
-    line-height: 1.4;
-    margin-bottom: 28px;
+    font-weight: 500;
 }
 
-.cta-wrap {
+.hero-links {
+    margin-top: 20px;
     display: flex;
+    gap: 26px;
     justify-content: center;
-    gap: 14px;
     flex-wrap: wrap;
-    margin-bottom: 42px;
 }
 
-.cta-primary {
-    display: inline-block;
-    background: #0071e3;
-    color: white !important;
-    padding: 12px 22px;
-    border-radius: 999px;
+.hero-links a {
+    color: var(--blue);
     text-decoration: none;
-    font-weight: 600;
-    font-size: 1rem;
+    font-size: 21px;
+    font-weight: 500;
 }
 
-.cta-secondary {
-    display: inline-block;
-    background: transparent;
-    color: #0071e3 !important;
-    padding: 12px 22px;
-    border-radius: 999px;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 1rem;
-    border: 1px solid rgba(0,113,227,0.18);
+.hero-links a::after {
+    content: " ›";
 }
 
-.hero-device {
-    margin: 0 auto;
-    margin-top: 22px;
-    width: min(920px, 92%);
-    height: 420px;
-    border-radius: 36px;
-    background:
-        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.9), transparent 30%),
-        radial-gradient(circle at 80% 30%, rgba(180,210,255,0.45), transparent 28%),
-        linear-gradient(145deg, #dfe7f6 0%, #f9fbff 40%, #d9e6ff 100%);
-    box-shadow:
-        0 20px 60px rgba(0,0,0,0.10),
-        inset 0 1px 0 rgba(255,255,255,0.9);
+.hero-visual {
+    margin: 36px auto 0;
+    width: min(1120px, 96%);
+    height: 560px;
+    border-radius: 40px;
     position: relative;
     overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 25%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.20) 18%, transparent 34%),
+        radial-gradient(circle at 22% 70%, rgba(152,178,255,0.32), transparent 26%),
+        radial-gradient(circle at 78% 70%, rgba(204,168,255,0.26), transparent 24%),
+        linear-gradient(180deg, #161618 0%, #272730 30%, #d7dce9 76%, #f6f7fb 100%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
 }
 
-.hero-device::before {
+.phone {
+    position: absolute;
+    bottom: -10px;
+    width: 250px;
+    height: 500px;
+    border-radius: 42px;
+    background: linear-gradient(180deg, #0d0d10 0%, #20242b 42%, #111216 100%);
+    box-shadow:
+        0 18px 60px rgba(0,0,0,0.22),
+        inset 0 0 0 2px rgba(255,255,255,0.08);
+}
+
+.phone::before {
     content: "";
     position: absolute;
-    inset: 18px;
-    border-radius: 26px;
-    background: linear-gradient(180deg, #ffffff 0%, #f7f7fa 100%);
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+    inset: 10px;
+    border-radius: 34px;
+    background:
+        radial-gradient(circle at 50% 20%, rgba(120,170,255,0.9), transparent 20%),
+        linear-gradient(180deg, #15161b 0%, #232736 40%, #8fa8ff 100%);
 }
 
-.hero-device::after {
-    content: "MINGYU";
+.phone::after {
+    content: "";
     position: absolute;
-    top: 50%;
+    top: 18px;
     left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: clamp(2.5rem, 8vw, 6rem);
-    font-weight: 800;
-    letter-spacing: -0.05em;
-    color: rgba(29,29,31,0.9);
+    transform: translateX(-50%);
+    width: 110px;
+    height: 26px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.86);
+    z-index: 4;
 }
 
-/* 카드 그리드 */
-.grid-title {
-    text-align: center;
-    font-size: clamp(2rem, 4vw, 3.4rem);
-    line-height: 1.08;
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    margin-bottom: 14px;
+.phone.left { left: 24%; transform: rotate(-10deg); }
+.phone.center { left: 50%; transform: translateX(-50%); z-index: 3; }
+.phone.right { right: 24%; transform: rotate(10deg); }
+
+.hero-caption {
+    margin-top: 26px;
+    font-size: 14px;
+    color: var(--sub);
 }
 
-.grid-subtitle {
-    text-align: center;
-    font-size: 1.15rem;
-    color: #6e6e73;
-    margin-bottom: 40px;
+/* ---------- feature cards ---------- */
+.grid-wrap {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 0 12px 18px;
 }
 
-.card-grid {
+.grid-2 {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px;
+    gap: 12px;
 }
 
-.apple-card {
-    min-height: 340px;
+.card {
+    min-height: 700px;
     border-radius: 28px;
-    padding: 34px 32px;
-    position: relative;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    position: relative;
+    padding: 56px 48px;
+    background: #fff;
 }
 
-.card-light {
-    background: linear-gradient(180deg, #ffffff 0%, #f7f7fa 100%);
-    color: #1d1d1f;
+.card.light {
+    background: linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%);
+    color: var(--text);
 }
 
-.card-dark {
-    background: linear-gradient(180deg, #101114 0%, #000000 100%);
+.card.dark {
+    background: linear-gradient(180deg, #000000 0%, #101115 100%);
     color: #f5f5f7;
 }
 
-.card-blue {
-    background: linear-gradient(135deg, #eaf2ff 0%, #d9e8ff 48%, #f7fbff 100%);
-    color: #1d1d1f;
+.card.blue {
+    background: linear-gradient(180deg, #dfe9ff 0%, #eef4ff 42%, #ffffff 100%);
 }
 
-.card-silver {
-    background: linear-gradient(135deg, #f3f4f7 0%, #ffffff 55%, #eceef3 100%);
-    color: #1d1d1f;
+.card.gray {
+    background: linear-gradient(180deg, #f0f1f5 0%, #ffffff 100%);
 }
 
-.card-eyebrow {
-    font-size: 0.95rem;
+.card-kicker {
+    font-size: 21px;
     font-weight: 700;
-    margin-bottom: 8px;
-    opacity: 0.8;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
 }
 
 .card-title {
-    font-size: clamp(1.8rem, 3vw, 2.7rem);
-    line-height: 1.1;
+    font-size: clamp(34px, 4vw, 64px);
+    line-height: 1.03;
     font-weight: 800;
-    letter-spacing: -0.035em;
-    margin-bottom: 10px;
+    letter-spacing: -0.05em;
+    max-width: 720px;
 }
 
 .card-desc {
-    font-size: 1.05rem;
-    line-height: 1.5;
+    margin-top: 18px;
+    font-size: 21px;
+    line-height: 1.35;
+    max-width: 700px;
+    color: inherit;
     opacity: 0.92;
-    max-width: 420px;
 }
 
-.card-visual {
+.card-link {
+    display: inline-block;
+    margin-top: 18px;
+    text-decoration: none;
+    color: var(--blue);
+    font-size: 19px;
+    font-weight: 500;
+}
+
+.card-link::after {
+    content: " ›";
+}
+
+.visual-ring {
     position: absolute;
-    right: -20px;
-    bottom: -20px;
-    width: 220px;
-    height: 220px;
+    right: -80px;
+    bottom: -80px;
+    width: 460px;
+    height: 460px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.08) 45%, transparent 70%);
+    background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.15) 35%, transparent 65%);
     filter: blur(2px);
 }
 
-.card-dark .card-visual {
-    background: radial-gradient(circle, rgba(130,170,255,0.35) 0%, rgba(255,255,255,0.04) 45%, transparent 70%);
+.dark .visual-ring {
+    background: radial-gradient(circle, rgba(98,139,255,0.45) 0%, rgba(255,255,255,0.08) 35%, transparent 68%);
 }
 
-/* 소개 섹션 */
-.profile-wrap {
-    display: grid;
-    grid-template-columns: 1.1fr 0.9fr;
-    gap: 24px;
-    align-items: stretch;
-}
-
-.profile-main, .profile-side {
+.mock-screen {
+    position: absolute;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%);
+    width: min(78%, 520px);
+    height: 320px;
     border-radius: 28px;
-    padding: 40px 36px;
-    background: #fff;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.55)),
+        linear-gradient(135deg, #d9e6ff 0%, #ecf2ff 55%, #f8fbff 100%);
+    box-shadow: 0 18px 50px rgba(0,0,0,0.10);
+    border: 1px solid rgba(255,255,255,0.75);
 }
 
-.profile-name {
-    font-size: clamp(2.4rem, 4vw, 3.8rem);
-    line-height: 1.08;
-    font-weight: 800;
-    letter-spacing: -0.045em;
-    margin-bottom: 10px;
+.dark .mock-screen {
+    background:
+        linear-gradient(180deg, rgba(34,37,45,0.95), rgba(19,20,24,0.88)),
+        linear-gradient(135deg, #31415f 0%, #15171d 100%);
+    border-color: rgba(255,255,255,0.08);
 }
 
-.profile-oneline {
-    font-size: 1.2rem;
-    color: #6e6e73;
-    margin-bottom: 26px;
+.mock-bar {
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    top: 22px;
+    height: 18px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.08);
 }
 
-.profile-text {
-    font-size: 1.05rem;
-    line-height: 1.8;
-    color: #424245;
+.dark .mock-bar {
+    background: rgba(255,255,255,0.08);
 }
 
-.spec-list {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
+.mock-chip {
+    position: absolute;
+    left: 24px;
+    top: 62px;
+    width: 120px;
+    height: 88px;
+    border-radius: 20px;
+    background: rgba(0,113,227,0.12);
 }
 
-.spec-item {
-    padding-bottom: 14px;
-    border-bottom: 1px solid rgba(0,0,0,0.08);
+.mock-chip2 {
+    position: absolute;
+    right: 24px;
+    top: 62px;
+    width: 180px;
+    height: 88px;
+    border-radius: 20px;
+    background: rgba(0,0,0,0.06);
 }
 
-.spec-label {
-    font-size: 0.95rem;
-    color: #6e6e73;
-    margin-bottom: 4px;
+.dark .mock-chip,
+.dark .mock-chip2 {
+    background: rgba(255,255,255,0.08);
 }
 
-.spec-value {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #1d1d1f;
+.mock-footer {
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    bottom: 24px;
+    height: 110px;
+    border-radius: 20px;
+    background: rgba(0,0,0,0.06);
 }
 
-/* 푸터 */
-.footer {
-    text-align: center;
-    padding: 36px 24px 56px 24px;
-    font-size: 0.92rem;
-    color: #86868b;
-    background: #f5f5f7;
+.dark .mock-footer {
+    background: rgba(255,255,255,0.07);
 }
 
-/* 반응형 */
-@media (max-width: 900px) {
-    .card-grid,
-    .profile-wrap {
+.notice {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 26px 22px 44px;
+    color: var(--sub);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+@media (max-width: 1068px) {
+    .grid-2 {
         grid-template-columns: 1fr;
     }
 
-    .hero-device {
-        height: 280px;
+    .hero-visual {
+        height: 440px;
+    }
+
+    .phone {
+        width: 180px;
+        height: 360px;
+        border-radius: 30px;
+    }
+
+    .phone::before {
+        border-radius: 22px;
+    }
+
+    .phone.left { left: 14%; }
+    .phone.right { right: 14%; }
+
+    .card {
+        min-height: 620px;
+        padding: 42px 28px;
+    }
+
+    .local-nav {
+        height: auto;
+        padding: 10px 0;
+    }
+
+    .local-nav-inner {
+        height: auto;
+        align-items: flex-start;
+        gap: 10px;
+        flex-direction: column;
+    }
+
+    .local-links {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 734px) {
+    .global-nav-inner {
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .global-nav-left a:not(:first-child),
+    .global-nav-right a {
+        display: none;
+    }
+
+    .hero-inner {
+        padding-top: 56px;
+    }
+
+    .hero-title {
+        font-size: clamp(40px, 14vw, 72px);
+    }
+
+    .hero-visual {
+        height: 320px;
         border-radius: 28px;
     }
 
-    .nav-menu {
-        gap: 14px;
-        font-size: 0.8rem;
+    .phone {
+        width: 120px;
+        height: 250px;
+        border-radius: 22px;
     }
 
-    .section {
-        padding: 56px 18px;
+    .phone::before {
+        inset: 6px;
+        border-radius: 16px;
+    }
+
+    .phone::after {
+        width: 58px;
+        height: 14px;
+        top: 10px;
+    }
+
+    .card {
+        min-height: 540px;
+    }
+
+    .card-desc {
+        font-size: 18px;
     }
 }
 </style>
 """, unsafe_allow_html=True)
 
-# 상단 네비
 st.markdown("""
-<div class="top-nav">
-    <div class="nav-inner">
-        <div class="nav-left"></div>
-        <div class="nav-menu">
-            <span>소개</span>
-            <span>역량</span>
-            <span>프로젝트</span>
-            <span>연락처</span>
+<div class="global-nav">
+    <div class="global-nav-inner">
+        <div class="global-nav-left">
+            <a href="#"><span class="apple"></span></a>
+            <a href="#">스토어</a>
+            <a href="#">Mac</a>
+            <a href="#">iPad</a>
+            <a href="#"><strong>iPhone</strong></a>
+            <a href="#">Watch</a>
+            <a href="#">AirPods</a>
+            <a href="#">TV 및 홈</a>
+            <a href="#">액세서리</a>
+            <a href="#">고객지원</a>
+        </div>
+        <div class="global-nav-right">
+            <a href="#">검색</a>
+            <a href="#">장바구니</a>
+        </div>
+    </div>
+</div>
+
+<div class="local-nav">
+    <div class="local-nav-inner">
+        <div class="local-title">iPhone</div>
+        <div class="local-links">
+            <a href="#">iPhone 17 Pro</a>
+            <a href="#">iPhone Air</a>
+            <a href="#">iPhone 17</a>
+            <a href="#">iPhone 17e</a>
+            <a href="#">iPhone 16</a>
+            <a href="#">비교하기</a>
+            <a href="#">액세서리</a>
+            <a href="#" class="buy-btn">쇼핑하기</a>
         </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# 히어로 섹션
 st.markdown("""
-<section class="hero">
-    <div class="container">
-        <div class="eyebrow">자기소개 페이지</div>
-        <div class="hero-title">심플하게.<br>강하게.</div>
-        <div class="hero-subtitle">
-            수학교육, 에듀테크, 그리고 더 나은 학습 경험을 설계하는 사람.
+<div class="hero">
+    <div class="hero-inner">
+        <div class="hero-eyebrow">iPhone</div>
+        <h1 class="hero-title">그야말로 iPhone.</h1>
+        <div class="hero-sub">강력함. 매끄러움. 그리고 놀랍도록 직관적인 경험.</div>
+        <div class="hero-links">
+            <a href="#">더 알아보기</a>
+            <a href="#">쇼핑하기</a>
         </div>
-        <div class="cta-wrap">
-            <a class="cta-primary" href="#">더 알아보기</a>
-            <a class="cta-secondary" href="#">연락하기</a>
+
+        <div class="hero-visual">
+            <div class="phone left"></div>
+            <div class="phone center"></div>
+            <div class="phone right"></div>
         </div>
-        <div class="hero-device"></div>
+        <div class="hero-caption">현재 Apple KR iPhone 랜딩 페이지의 대형 히어로 구조를 참고한 재구성 버전</div>
     </div>
-</section>
+</div>
 """, unsafe_allow_html=True)
 
-# 카드 섹션
 st.markdown("""
-<section class="section section-light">
-    <div class="container">
-        <div class="grid-title">핵심 역량.</div>
-        <div class="grid-subtitle">깔끔한 구조. 명확한 메시지. 높은 완성도.</div>
+<div class="section section-tight">
+    <div class="grid-wrap">
+        <div class="grid-2">
 
-        <div class="card-grid">
-            <div class="apple-card card-dark">
-                <div class="card-eyebrow">Education</div>
-                <div class="card-title">수학교육 전공</div>
+            <div class="card light">
+                <div class="card-kicker">시작하기</div>
+                <div class="card-title">안드로이드에서 iPhone으로 갈아타기, 정말 간단합니다.</div>
                 <div class="card-desc">
-                    수학적 개념을 학생 눈높이에 맞게 재구성하고,
-                    학습자가 이해 가능한 형태로 설계합니다.
+                    데이터 이전, 메시지 적응, 기본 사용 흐름까지.
+                    복잡한 설명 대신 빠르고 부드러운 전환 경험에 초점을 둔 카드입니다.
                 </div>
-                <div class="card-visual"></div>
+                <a class="card-link" href="#">자세히 보기</a>
+                <div class="mock-screen">
+                    <div class="mock-bar"></div>
+                    <div class="mock-chip"></div>
+                    <div class="mock-chip2"></div>
+                    <div class="mock-footer"></div>
+                </div>
+                <div class="visual-ring"></div>
             </div>
 
-            <div class="apple-card card-light">
-                <div class="card-eyebrow">EdTech</div>
-                <div class="card-title">디지털 수업 설계</div>
+            <div class="card dark">
+                <div class="card-kicker">견고함을 위한 디자인</div>
+                <div class="card-title">오랜 시간 그 가치를 유지하는 iPhone.</div>
                 <div class="card-desc">
-                    에듀테크와 디지털 코스웨어를 활용해
-                    효율적이고 효과적인 수업 경험을 만듭니다.
+                    내구성, 긴 소프트웨어 지원, 빠른 칩 성능이라는 메시지를
+                    Apple식 대형 타이포와 어두운 배경 카드 구성으로 재해석했습니다.
                 </div>
-                <div class="card-visual"></div>
+                <a class="card-link" href="#">자세히 보기</a>
+                <div class="mock-screen">
+                    <div class="mock-bar"></div>
+                    <div class="mock-chip"></div>
+                    <div class="mock-chip2"></div>
+                    <div class="mock-footer"></div>
+                </div>
+                <div class="visual-ring"></div>
             </div>
 
-            <div class="apple-card card-blue">
-                <div class="card-eyebrow">Project</div>
-                <div class="card-title">문제 해결 중심</div>
+            <div class="card blue">
+                <div class="card-kicker">iOS 및 Apple Intelligence</div>
+                <div class="card-title">변화는 대대적. 경험은 더욱 환상적.</div>
                 <div class="card-desc">
-                    단순한 정보 전달이 아니라,
-                    실제 문제를 해결하는 구조로 프로젝트를 설계합니다.
+                    Liquid Glass, 개인화, 생산성 기능, 기기 내 AI 경험 같은
+                    현재 페이지의 핵심 메시지를 반영한 레이아웃입니다.
                 </div>
-                <div class="card-visual"></div>
+                <a class="card-link" href="#">기능 살펴보기</a>
+                <div class="mock-screen">
+                    <div class="mock-bar"></div>
+                    <div class="mock-chip"></div>
+                    <div class="mock-chip2"></div>
+                    <div class="mock-footer"></div>
+                </div>
+                <div class="visual-ring"></div>
             </div>
 
-            <div class="apple-card card-silver">
-                <div class="card-eyebrow">Mindset</div>
-                <div class="card-title">디테일과 완성도</div>
+            <div class="card gray">
+                <div class="card-kicker">개인정보 보호</div>
+                <div class="card-title">당신의 데이터는 당신이 원하는 곳에서만.</div>
                 <div class="card-desc">
-                    결과물의 밀도, 구조, 표현까지 끝까지 다듬는 태도를 중요하게 봅니다.
+                    iPhone 페이지 후반부의 프라이버시 메시지 흐름을 반영해,
+                    간결한 한 줄 메시지 중심 카드로 구성했습니다.
                 </div>
-                <div class="card-visual"></div>
+                <a class="card-link" href="#">더 알아보기</a>
+                <div class="mock-screen">
+                    <div class="mock-bar"></div>
+                    <div class="mock-chip"></div>
+                    <div class="mock-chip2"></div>
+                    <div class="mock-footer"></div>
+                </div>
+                <div class="visual-ring"></div>
             </div>
+
         </div>
     </div>
-</section>
-""", unsafe_allow_html=True)
+</div>
 
-# 프로필 섹션
-st.markdown("""
-<section class="section section-white">
-    <div class="container">
-        <div class="profile-wrap">
-            <div class="profile-main">
-                <div class="profile-name">민규</div>
-                <div class="profile-oneline">수학교육과 학부생 · 예비교원 · 에듀테크 관심</div>
-                <div class="profile-text">
-                    저는 수학교육을 전공하며, 학생들이 수학을 더 잘 이해할 수 있도록
-                    수업을 설계하는 데 관심이 많습니다.
-                    특히 에듀테크와 디지털 도구를 활용해
-                    학습 경험을 더 직관적이고 효과적으로 만드는 작업에 집중하고 있습니다.
-                    <br><br>
-                    단순히 예쁜 결과물보다, 목적에 맞고 실제로 작동하는 구조를 선호합니다.
-                    그래서 기획, 내용 구성, 시각적 완성도를 함께 고려하는 편입니다.
-                </div>
-            </div>
-
-            <div class="profile-side">
-                <div class="spec-list">
-                    <div class="spec-item">
-                        <div class="spec-label">전공</div>
-                        <div class="spec-value">수학교육</div>
-                    </div>
-                    <div class="spec-item">
-                        <div class="spec-label">관심 분야</div>
-                        <div class="spec-value">에듀테크 · 수업 설계 · 디지털 학습</div>
-                    </div>
-                    <div class="spec-item">
-                        <div class="spec-label">강점</div>
-                        <div class="spec-value">구조화 · 기획력 · 높은 완성도</div>
-                    </div>
-                    <div class="spec-item">
-                        <div class="spec-label">지향점</div>
-                        <div class="spec-value">학생 중심의 효과적인 수학교육</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-""", unsafe_allow_html=True)
-
-# 푸터
-st.markdown("""
-<div class="footer">
-    Copyright © 2026 MINGYU. All rights reserved.
+<div class="notice">
+    이 페이지는 Apple KR iPhone 페이지의 현재 정보 구조와 섹션 흐름을 참고해 만든
+    비공식 스타일 데모입니다. 실제 Apple 이미지, 원문 문구, 제품 사진, 인터랙션 자산은 포함하지 않았습니다.
 </div>
 """, unsafe_allow_html=True)
