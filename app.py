@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import html
 import io
+import json
 import os
 import time
 import uuid
@@ -245,6 +246,9 @@ def inject_css() -> None:
           font-size: .82rem;
           line-height: 1.65;
         }
+        div[data-testid="stTextInput"]:has(input[aria-label^="blank__"]) {
+          display: none;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -469,6 +473,512 @@ def collect_data(is_submitted: bool = False) -> dict[str, Any]:
     if is_submitted:
         data["submittedAt"] = datetime.now().isoformat(timespec="seconds")
     return data
+
+
+def render_blank_sync_inputs() -> None:
+    for key, _ in BLANK_FIELDS:
+        st.text_input(f"blank__{key}", key=f"w_blank_{key}", label_visibility="collapsed")
+
+
+def render_permutation_drag_widget() -> None:
+    words_json = json.dumps(WORD_ITEMS, ensure_ascii=False)
+    fields_json = json.dumps([{"key": key, "label": label} for key, label in BLANK_FIELDS], ensure_ascii=False)
+    blanks_json = json.dumps(
+        {key: text_key(f"w_blank_{key}") for key, _ in BLANK_FIELDS},
+        ensure_ascii=False,
+    )
+    component_html = """
+    <style>
+      :root {
+        --lb: #5FA8C8;
+        --lb2: #3A8BAF;
+        --fg: #3D4A44;
+        --fg2: #1E2822;
+        --cream: #F0EAE0;
+        --sage: #6E9170;
+        --outline: rgba(61,74,68,.24);
+        --shadow: 0 8px 22px rgba(30,40,34,.10);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--fg2);
+        font-family: "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      .perm-drag-app {
+        padding: 2px 2px 16px;
+      }
+      .word-bank {
+        min-height: 86px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 13px;
+        margin-bottom: 15px;
+        border: 1px dashed rgba(58,139,175,.48);
+        border-radius: 14px;
+        background: rgba(169,207,224,.16);
+      }
+      .word-bank.over {
+        background: rgba(169,207,224,.28);
+        border-color: var(--lb2);
+      }
+      .concept-lines {
+        display: grid;
+        gap: 10px;
+        padding: 2px 0;
+      }
+      .concept-line {
+        margin: 0;
+        padding: 12px 13px;
+        border: 1px solid rgba(255,255,255,.70);
+        border-radius: 14px;
+        background: rgba(255,255,255,.56);
+        box-shadow: 0 2px 10px rgba(30,40,34,.06);
+        line-height: 1.75;
+        word-break: keep-all;
+      }
+      .word-chip {
+        appearance: none;
+        border: 1px solid rgba(58,139,175,.34);
+        border-radius: 999px;
+        background: rgba(255,255,255,.86);
+        color: var(--fg2);
+        cursor: grab;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 34px;
+        max-width: 100%;
+        padding: 6px 12px;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1.25;
+        box-shadow: 0 2px 8px rgba(30,40,34,.08);
+        touch-action: none;
+        user-select: none;
+        white-space: normal;
+      }
+      .word-chip:active {
+        cursor: grabbing;
+      }
+      .word-chip.dragging {
+        opacity: .48;
+      }
+      .drop-zone {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        vertical-align: middle;
+        min-width: 136px;
+        min-height: 38px;
+        max-width: 100%;
+        margin: 0 4px;
+        padding: 3px 8px;
+        border: 2px dashed rgba(61,74,68,.26);
+        border-radius: 12px;
+        background: rgba(255,255,255,.46);
+        color: rgba(61,74,68,.64);
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.3;
+      }
+      .drop-zone.over {
+        border-color: var(--lb2);
+        background: rgba(169,207,224,.26);
+      }
+      .drop-zone.filled {
+        border-style: solid;
+        border-color: rgba(58,139,175,.38);
+        background: rgba(255,255,255,.70);
+        color: var(--fg2);
+      }
+      .drop-zone.filled .word-chip {
+        width: 100%;
+        min-height: 30px;
+        border-color: transparent;
+        background: transparent;
+        box-shadow: none;
+        padding: 3px 2px;
+      }
+      .sync-status {
+        min-height: 18px;
+        margin-top: 8px;
+        color: #7A2A2A;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .touch-clone {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 9999;
+        pointer-events: none;
+        opacity: .92;
+        transform: translate(-50%, -50%);
+      }
+      @media (max-width: 640px) {
+        .word-bank { padding: 10px; }
+        .concept-line { padding: 10px; }
+        .drop-zone {
+          min-width: 104px;
+          margin: 3px 2px;
+        }
+        .word-chip {
+          font-size: 13px;
+          padding: 6px 10px;
+        }
+      }
+    </style>
+
+    <div class="perm-drag-app">
+      <div id="perm-word-bank" class="word-bank" aria-label="보기"></div>
+      <div class="concept-lines">
+        <p class="concept-line">
+          서로 다른 <b>n</b>개에서 <b>r</b>(0&lt;r≤n)개를 택하여 일렬로 나열하는 것을
+          <span class="drop-zone" data-key="def1"></span>이라 하고, 이 순열의 가짓수를
+          <span class="drop-zone" data-key="def2"></span>로 나타냅니다.
+        </p>
+        <p class="concept-line">
+          <b>nPr</b> =
+          <span class="drop-zone" data-key="npr"></span>
+        </p>
+        <p class="concept-line">
+          <b>nPn</b> =
+          <span class="drop-zone" data-key="pnn"></span>
+          =
+          <span class="drop-zone" data-key="pnnExpand"></span>
+        </p>
+        <p class="concept-line">
+          <b>nP0</b> =
+          <span class="drop-zone" data-key="p0"></span>,
+          <b>0!</b> =
+          <span class="drop-zone" data-key="fac0"></span>
+        </p>
+        <p class="concept-line">
+          <b>nPr</b> =
+          <span class="drop-zone" data-key="fact"></span>,
+          조건:
+          <span class="drop-zone" data-key="cond"></span>
+        </p>
+      </div>
+      <div id="sync-status" class="sync-status"></div>
+    </div>
+
+    <script>
+      (() => {
+        const WORDS = __WORDS__;
+        const FIELDS = __FIELDS__;
+        const INITIAL_BLANKS = __BLANKS__;
+        const byId = new Map(WORDS.map((word) => [word.id, word]));
+        const order = WORDS.map((word) => word.id);
+        const state = {};
+        let draggingId = null;
+        let touchId = null;
+        let touchClone = null;
+        let pointerId = null;
+
+        function fieldLabel(key) {
+          return "빈칸";
+        }
+
+        function zoneForWord(id) {
+          return Object.keys(state).find((key) => state[key] && state[key].id === id);
+        }
+
+        function clearWord(id) {
+          const key = zoneForWord(id);
+          if (key) {
+            delete state[key];
+          }
+        }
+
+        function assignWord(id, key) {
+          if (!id || !byId.has(id)) {
+            return;
+          }
+          clearWord(id);
+          if (state[key]) {
+            delete state[key];
+          }
+          const word = byId.get(id);
+          state[key] = { id: word.id, text: word.text };
+          render();
+        }
+
+        function setParentInput(key, value) {
+          try {
+            const doc = window.parent.document;
+            const input = doc.querySelector(`input[aria-label="blank__${key}"]`);
+            if (!input) {
+              return false;
+            }
+            if (input.value === value) {
+              return true;
+            }
+            const setter = Object.getOwnPropertyDescriptor(window.parent.HTMLInputElement.prototype, "value").set;
+            setter.call(input, value);
+            input.dispatchEvent(new window.parent.Event("input", { bubbles: true }));
+            input.dispatchEvent(new window.parent.Event("change", { bubbles: true }));
+            return true;
+          } catch (error) {
+            return false;
+          }
+        }
+
+        function syncAll() {
+          const failed = FIELDS.some((field) => {
+            const value = state[field.key] ? state[field.key].text : "";
+            return !setParentInput(field.key, value);
+          });
+          document.getElementById("sync-status").textContent = failed
+            ? "빈칸 저장 동기화가 지연되고 있습니다. 페이지를 새로고침한 뒤 다시 시도하세요."
+            : "";
+        }
+
+        function makeChip(word, inZone) {
+          const chip = document.createElement("button");
+          chip.type = "button";
+          chip.className = "word-chip";
+          chip.draggable = true;
+          chip.dataset.id = word.id;
+          chip.textContent = word.text;
+          chip.addEventListener("dragstart", (event) => {
+            draggingId = word.id;
+            chip.classList.add("dragging");
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", word.id);
+          });
+          chip.addEventListener("dragend", () => {
+            draggingId = null;
+            chip.classList.remove("dragging");
+          });
+          chip.addEventListener("pointerdown", pointerStart);
+          chip.addEventListener("touchstart", touchStart, { passive: false });
+          if (inZone) {
+            chip.addEventListener("click", () => {
+              clearWord(word.id);
+              render();
+            });
+          }
+          return chip;
+        }
+
+        function renderBank() {
+          const bank = document.getElementById("perm-word-bank");
+          const usedIds = new Set(Object.values(state).map((item) => item.id));
+          bank.innerHTML = "";
+          order
+            .filter((id) => !usedIds.has(id))
+            .forEach((id) => bank.appendChild(makeChip(byId.get(id), false)));
+        }
+
+        function renderZones() {
+          document.querySelectorAll(".drop-zone").forEach((zone) => {
+            const key = zone.dataset.key;
+            zone.innerHTML = "";
+            zone.classList.remove("filled");
+            const item = state[key];
+            if (item && byId.has(item.id)) {
+              zone.classList.add("filled");
+              zone.appendChild(makeChip(byId.get(item.id), true));
+            } else {
+              zone.textContent = fieldLabel(key);
+            }
+          });
+        }
+
+        function render() {
+          renderBank();
+          renderZones();
+          syncAll();
+        }
+
+        function restoreInitial() {
+          const usedIds = new Set();
+          FIELDS.forEach((field) => {
+            const text = INITIAL_BLANKS[field.key] || "";
+            if (!text) {
+              return;
+            }
+            let word = WORDS.find((item) => item.text === text && !usedIds.has(item.id));
+            if (!word) {
+              word = { id: `custom-${field.key}`, text };
+              byId.set(word.id, word);
+            }
+            usedIds.add(word.id);
+            state[field.key] = { id: word.id, text: word.text };
+          });
+        }
+
+        function eventWordId(event) {
+          return event.dataTransfer.getData("text/plain") || draggingId;
+        }
+
+        function bindDrops() {
+          const bank = document.getElementById("perm-word-bank");
+          bank.addEventListener("dragover", (event) => {
+            event.preventDefault();
+            bank.classList.add("over");
+          });
+          bank.addEventListener("dragleave", () => bank.classList.remove("over"));
+          bank.addEventListener("drop", (event) => {
+            event.preventDefault();
+            bank.classList.remove("over");
+            clearWord(eventWordId(event));
+            render();
+          });
+
+          document.querySelectorAll(".drop-zone").forEach((zone) => {
+            zone.addEventListener("dragover", (event) => {
+              event.preventDefault();
+              zone.classList.add("over");
+            });
+            zone.addEventListener("dragleave", () => zone.classList.remove("over"));
+            zone.addEventListener("drop", (event) => {
+              event.preventDefault();
+              zone.classList.remove("over");
+              assignWord(eventWordId(event), zone.dataset.key);
+            });
+            zone.addEventListener("click", (event) => {
+              if (event.target.closest(".word-chip")) {
+                return;
+              }
+              if (state[zone.dataset.key]) {
+                delete state[zone.dataset.key];
+                render();
+              }
+            });
+          });
+        }
+
+        function moveCloneTo(x, y) {
+          if (!touchClone) {
+            return;
+          }
+          touchClone.style.left = `${x}px`;
+          touchClone.style.top = `${y}px`;
+        }
+
+        function moveTouchClone(touch) {
+          moveCloneTo(touch.clientX, touch.clientY);
+        }
+
+        function cleanupTouch() {
+          window.removeEventListener("touchmove", touchMove);
+          if (touchClone) {
+            touchClone.remove();
+          }
+          touchClone = null;
+          touchId = null;
+        }
+
+        function cleanupPointer() {
+          window.removeEventListener("pointermove", pointerMove);
+          if (touchClone) {
+            touchClone.remove();
+          }
+          touchClone = null;
+          touchId = null;
+          pointerId = null;
+        }
+
+        function pointerStart(event) {
+          if (event.button !== 0 || touchId) {
+            return;
+          }
+          event.preventDefault();
+          pointerId = event.pointerId;
+          touchId = event.currentTarget.dataset.id;
+          draggingId = touchId;
+          touchClone = event.currentTarget.cloneNode(true);
+          touchClone.classList.add("touch-clone");
+          document.body.appendChild(touchClone);
+          moveCloneTo(event.clientX, event.clientY);
+          window.addEventListener("pointermove", pointerMove);
+          window.addEventListener("pointerup", pointerEnd, { once: true });
+          window.addEventListener("pointercancel", cleanupPointer, { once: true });
+        }
+
+        function pointerMove(event) {
+          if (pointerId !== null && event.pointerId !== pointerId) {
+            return;
+          }
+          event.preventDefault();
+          moveCloneTo(event.clientX, event.clientY);
+        }
+
+        function pointerEnd(event) {
+          if (pointerId !== null && event.pointerId !== pointerId) {
+            return;
+          }
+          event.preventDefault();
+          const element = document.elementFromPoint(event.clientX, event.clientY);
+          const zone = element && element.closest(".drop-zone");
+          const bank = element && element.closest("#perm-word-bank");
+          const id = touchId;
+          cleanupPointer();
+          if (zone) {
+            assignWord(id, zone.dataset.key);
+          } else if (bank) {
+            clearWord(id);
+            render();
+          }
+          draggingId = null;
+        }
+
+        function touchStart(event) {
+          if (event.touches.length !== 1 || touchId) {
+            return;
+          }
+          event.preventDefault();
+          touchId = event.currentTarget.dataset.id;
+          draggingId = touchId;
+          touchClone = event.currentTarget.cloneNode(true);
+          touchClone.classList.add("touch-clone");
+          document.body.appendChild(touchClone);
+          moveTouchClone(event.touches[0]);
+          window.addEventListener("touchmove", touchMove, { passive: false });
+          window.addEventListener("touchend", touchEnd, { passive: false, once: true });
+          window.addEventListener("touchcancel", cleanupTouch, { passive: false, once: true });
+        }
+
+        function touchMove(event) {
+          event.preventDefault();
+          moveTouchClone(event.touches[0]);
+        }
+
+        function touchEnd(event) {
+          event.preventDefault();
+          const touch = event.changedTouches[0];
+          const element = document.elementFromPoint(touch.clientX, touch.clientY);
+          const zone = element && element.closest(".drop-zone");
+          const bank = element && element.closest("#perm-word-bank");
+          const id = touchId;
+          cleanupTouch();
+          if (zone) {
+            assignWord(id, zone.dataset.key);
+          } else if (bank) {
+            clearWord(id);
+            render();
+          }
+          draggingId = null;
+        }
+
+        restoreInitial();
+        bindDrops();
+        render();
+      })();
+    </script>
+    """
+    component_html = (
+        component_html.replace("__WORDS__", words_json)
+        .replace("__FIELDS__", fields_json)
+        .replace("__BLANKS__", blanks_json)
+    )
+    components.html(component_html, height=520, scrolling=False)
 
 
 def save_current_progress(silent: bool = True, completed_step: int | None = None) -> dict[str, Any] | None:
@@ -765,22 +1275,14 @@ def render_step1() -> None:
         unsafe_allow_html=True,
     )
     st.markdown(
-        "**<보기>**  "
-        + " / ".join(f"`{item['text']}`" for item in WORD_ITEMS),
-        unsafe_allow_html=False,
-    )
-    st.markdown(
         """
         서로 다른 $n$개에서 $r\\,(0 < r \\leq n)$개를 택하여 일렬로 나열하는 것을
         $n$개에서 $r$개를 택하는 순열이라 하고, 이 순열의 가짓수를 순열의 수라 하고
         기호로 나타냅니다. 아래 빈칸을 완성하세요.
         """
     )
-    options = [""] + [item["text"] for item in WORD_ITEMS]
-    cols = st.columns(3)
-    for idx, (key, label) in enumerate(BLANK_FIELDS):
-        with cols[idx % 3]:
-            st.selectbox(label, options, format_func=lambda x: x or "선택", key=f"w_blank_{key}")
+    render_blank_sync_inputs()
+    render_permutation_drag_widget()
     st.info("참고: 기호 $_nP_r$에서 P는 Permutation(순열)의 머리글자입니다.")
     st.markdown("</div>", unsafe_allow_html=True)
     nav_buttons(None, 2)
