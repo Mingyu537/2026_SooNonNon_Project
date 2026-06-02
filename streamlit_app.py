@@ -172,10 +172,78 @@ iframe { display: block; }
 </style>
 """
 
+# ── Animated background blobs ────────────────────────────────────────────────
+
+ANIMATED_BG = """
+<style>
+/* ── 일렁이는 액체 그라디언트 배경 ── */
+.bg-blobs {
+  position: fixed; inset: 0;
+  z-index: 0; pointer-events: none; overflow: hidden;
+}
+.blob {
+  position: absolute; border-radius: 50%;
+  filter: blur(72px);
+  animation: blobDrift ease-in-out infinite;
+  will-change: transform;
+}
+.blob-1 {
+  width: 62vw; height: 62vw; opacity: .60;
+  background: radial-gradient(circle, rgba(169,207,224,.90), rgba(169,207,224,0) 70%);
+  top: -18%; left: -8%;
+  animation-duration: 14s; animation-delay: 0s;
+}
+.blob-2 {
+  width: 55vw; height: 55vw; opacity: .55;
+  background: radial-gradient(circle, rgba(181,196,177,.85), rgba(181,196,177,0) 70%);
+  top: 2%; right: -12%;
+  animation-duration: 18s; animation-delay: -5s;
+}
+.blob-3 {
+  width: 50vw; height: 58vw; opacity: .50;
+  background: radial-gradient(circle, rgba(127,184,212,.80), rgba(127,184,212,0) 70%);
+  bottom: -12%; left: -6%;
+  animation-duration: 22s; animation-delay: -9s;
+}
+.blob-4 {
+  width: 58vw; height: 48vw; opacity: .48;
+  background: radial-gradient(circle, rgba(181,196,177,.75), rgba(181,196,177,0) 70%);
+  bottom: -8%; right: -12%;
+  animation-duration: 17s; animation-delay: -13s;
+}
+.blob-5 {
+  width: 38vw; height: 38vw; opacity: .38;
+  background: radial-gradient(circle, rgba(169,207,224,.70), rgba(169,207,224,0) 70%);
+  top: 38%; left: 28%;
+  animation-duration: 25s; animation-delay: -7s;
+}
+
+@keyframes blobDrift {
+  0%   { transform: translate(0,    0)    scale(1);    }
+  15%  { transform: translate(7vw,  5vh)  scale(1.06); }
+  30%  { transform: translate(3vw,  11vh) scale(0.95); }
+  45%  { transform: translate(11vw, 3vh)  scale(1.08); }
+  60%  { transform: translate(5vw,  14vh) scale(0.93); }
+  75%  { transform: translate(9vw,  6vh)  scale(1.04); }
+  90%  { transform: translate(2vw,  9vh)  scale(0.98); }
+  100% { transform: translate(0,    0)    scale(1);    }
+}
+</style>
+<div class="bg-blobs" aria-hidden="true">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+  <div class="blob blob-4"></div>
+  <div class="blob blob-5"></div>
+</div>
+"""
+
 # ── HTML patchers ─────────────────────────────────────────────────────────────
 
 def _patch_student(html: str) -> str:
     html = html.replace("<head>", "<head>\n" + BRIDGE_SCRIPT, 1)
+    # Inject animated background blobs right after <body>
+    html = html.replace("<body>", "<body>\n" + ANIMATED_BG, 1)
     # Fix teacher redirect: navigate parent instead of iframe
     html = html.replace(
         "window.location.replace(result.url);",
@@ -186,6 +254,7 @@ def _patch_student(html: str) -> str:
 
 def _patch_teacher(html: str) -> str:
     html = html.replace("<head>", "<head>\n" + BRIDGE_SCRIPT, 1)
+    html = html.replace("<body>", "<body>\n" + ANIMATED_BG, 1)
     return html
 
 
