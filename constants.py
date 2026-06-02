@@ -1,7 +1,7 @@
 """Shared lesson constants for the Streamlit port."""
 
 DEFAULT_SPREADSHEET_ID = ""
-DEFAULT_TEACHER_PASSWORD = "change-me"
+DEFAULT_TEACHER_PASSWORD = "math2026"
 
 LABELS = ["A", "B", "C", "D", "E", "F", "G"]
 GENRES = [
