@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════
 //  ★ 반드시 본인 값으로 수정하세요 ★
 // ══════════════════════════════════════════════
-var SPREADSHEET_ID   = 'YOUR_SPREADSHEET_ID';
+var SPREADSHEET_ID   = '1nRL-044KXGgaP52OZVU6laDgiFQNZ-SVXGIzc0tMNvw';
 var TEACHER_PASSWORD = 'math2026';
 // ══════════════════════════════════════════════
 
