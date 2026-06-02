@@ -308,6 +308,61 @@ def _remove_teacher_elements(html: str) -> str:
     return html
 
 
+# ── Step 5: 다른 조 문제 칸 → 우리 조 문제 표시로 교체 ────────────────────────
+
+# 교체할 대상 블록 (peer problems container)
+_PEER_BLOCK = (
+    '    <div style="background:var(--md-surface-var);border:1.5px solid var(--md-outline);'
+    'border-radius:var(--r-md);padding:18px;margin-bottom:18px;">\n'
+    '      <div style="display:flex;align-items:center;justify-content:space-between;'
+    'gap:10px;margin-bottom:12px;">\n'
+    '        <div style="font-size:.88rem;font-weight:800;color:var(--md-primary);">🧩 다른 조가 만든 문제</div>\n'
+    '        <button type="button" class="btn btn-s" style="padding:8px 14px;font-size:.78rem;'
+    'min-height:36px;" onclick="loadPeerProblems()">새로고침</button>\n'
+    '      </div>\n'
+    '      <div id="peer-problems-status" style="font-size:.78rem;color:var(--md-on-surface-v);'
+    'line-height:1.6;margin-bottom:10px;">문제 목록을 불러오는 중입니다.</div>\n'
+    '      <div id="peer-problems-list" style="display:grid;gap:10px;"></div>\n'
+    '    </div>'
+)
+
+# 교체될 내용: 우리 조 문제 표시 카드 + JS로 Step 4 내용을 동적으로 채움
+_MY_PROB_BLOCK = '''    <div style="background:var(--md-primary-cont);border:1.5px solid rgba(58,139,175,.3);border-radius:var(--r-md);padding:18px;margin-bottom:18px;">
+      <div style="font-size:.88rem;font-weight:800;color:var(--md-primary);margin-bottom:14px;">📋 우리 조가 만든 문제 (STEP 4)</div>
+      <div id="my-problem-display">
+        <div style="font-size:.82rem;color:var(--md-on-surface-v);font-style:italic;">Step 4를 완료하면 여기에 우리 조 문제가 표시됩니다.</div>
+      </div>
+    </div>
+    <script>
+    /* Step 5 진입 시 우리 조 문제를 Step 4 입력값에서 가져와 표시 */
+    function _showMyProblem() {
+      var display = document.getElementById('my-problem-display');
+      if (!display) return;
+      var stmt    = (document.getElementById('s-prob-statement') || {}).value || '';
+      var formula = (document.getElementById('s-prob-formula')   || {}).value || '';
+      var explain = (document.getElementById('s-prob-explain')   || {}).value || '';
+      var probConds = ['pc1','pc2','pc3','pc4','pc5','pc6']
+        .filter(function(id){ var el=document.getElementById(id); return el && el.checked; })
+        .map(function(id){ var el=document.getElementById(id); return el ? el.value : ''; })
+        .join(' + ');
+      if (!stmt.trim()) {
+        display.innerHTML = '<div style="font-size:.82rem;color:var(--md-on-surface-v);font-style:italic;">Step 4에서 문제를 작성하면 여기에 표시됩니다.</div>';
+        return;
+      }
+      function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+      display.innerHTML =
+        (probConds ? '<div style="font-size:.72rem;font-weight:700;color:var(--md-on-surface-v);margin-bottom:8px;">선택 조건: ' + _esc(probConds) + '</div>' : '') +
+        '<div style="font-size:.95rem;font-weight:700;line-height:1.75;white-space:pre-wrap;color:var(--md-on-surface);margin-bottom:12px;padding:12px 14px;background:rgba(255,255,255,.55);border-radius:12px;border:1px solid rgba(255,255,255,.65);">' + _esc(stmt) + '</div>' +
+        (formula ? '<div style="font-size:.72rem;font-weight:700;color:var(--md-on-surface-v);margin-bottom:4px;">경우의 수를 구하는 식</div><div style="font-size:.88rem;margin-bottom:12px;padding:8px 12px;background:rgba(255,255,255,.45);border-radius:10px;">' + _esc(formula) + '</div>' : '') +
+        (explain  ? '<div style="font-size:.72rem;font-weight:700;color:var(--md-on-surface-v);margin-bottom:4px;">풀이 과정 및 이유</div><div style="font-size:.85rem;white-space:pre-wrap;padding:8px 12px;background:rgba(255,255,255,.45);border-radius:10px;">' + _esc(explain) + '</div>' : '');
+    }
+    /* 원래 startPeerProblemPolling / stopPeerProblemPolling 을 우리 조 표시로 교체 */
+    function startPeerProblemPolling(){ _showMyProblem(); }
+    function stopPeerProblemPolling(){}
+    function loadPeerProblems(){ _showMyProblem(); }
+    </script>'''
+
+
 def _patch_student(html: str) -> str:
     # 1) API 브리지 + 스크롤 보장 CSS 주입
     html = html.replace("<head>", "<head>\n" + BRIDGE_SCRIPT + SCROLL_FIX_CSS, 1)
@@ -315,6 +370,8 @@ def _patch_student(html: str) -> str:
     html = html.replace("<body>", "<body>\n" + ANIMATED_BG, 1)
     # 3) 교사용 대시보드 요소 완전 제거
     html = _remove_teacher_elements(html)
+    # 4) Step 5: 다른 조 문제 → 우리 조 문제 표시로 교체
+    html = html.replace(_PEER_BLOCK, _MY_PROB_BLOCK, 1)
     return html
 
 
