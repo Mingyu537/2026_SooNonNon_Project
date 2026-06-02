@@ -384,6 +384,9 @@ submitAll = function() {
   if (okCard) okCard.style.display = 'block';
   showToast('🎵 오늘 수업도 수고했어요!');
 };
+
+/* ── 저장 중 배지 숨기기 ── */
+showSaveIndicator = function() {};
 </script>
 '''
 
@@ -397,7 +400,12 @@ def _patch_student(html: str) -> str:
     html = _remove_teacher_elements(html)
     # 4) Step 5: 다른 조 문제 칸 → 우리 조 문제 표시 카드로 교체
     html = html.replace(_PEER_BLOCK, _MY_PROB_HTML, 1)
-    # 5) override 스크립트를 </body> 직전에 주입 (원본 스크립트보다 나중에 실행)
+    # 5) 완료 카드 텍스트 변경: "제출 완료!" → "수업 끝!"
+    html = html.replace(
+        '<div class="success-title">제출 완료!</div>',
+        '<div class="success-title">수업 끝!</div>',
+    )
+    # 6) override 스크립트를 </body> 직전에 주입 (원본 스크립트보다 나중에 실행)
     html = html.replace("</body>", _MY_PROB_SCRIPT + "</body>", 1)
     return html
 
