@@ -362,6 +362,28 @@ function _showMyProblem() {
 startPeerProblemPolling = function(){ _showMyProblem(); };
 stopPeerProblemPolling  = function(){};
 loadPeerProblems        = function(){ _showMyProblem(); };
+
+/* ── 제출 버튼 텍스트 변경 ── */
+(function() {
+  var btn = document.getElementById('sub-btn');
+  if (btn) btn.textContent = '🎓 오늘의 학습 끝내기';
+})();
+
+/* ── submitAll 재정의: API 없이 즉시 완료 화면 표시 ── */
+submitAll = function() {
+  var allChk = ['chk1','chk2','chk3','chk4','chk5'].every(function(id) {
+    var el = document.getElementById(id);
+    return el && el.checked;
+  });
+  if (!allChk) { showToast('자기 점검 항목을 모두 확인하세요.'); return; }
+
+  /* 버튼 숨기고 완료 카드 표시 */
+  var btn = document.getElementById('sub-btn');
+  if (btn) btn.style.display = 'none';
+  var okCard = document.getElementById('ok-card');
+  if (okCard) okCard.style.display = 'block';
+  showToast('🎵 오늘 수업도 수고했어요!');
+};
 </script>
 '''
 
