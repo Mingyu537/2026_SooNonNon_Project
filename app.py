@@ -399,18 +399,11 @@ def inject_css() -> None:
         /* ── HIDDEN INPUTS (blank sync) ── */
         div[data-testid="stTextInput"]:has(input[aria-label^="blank__"]) { display: none; }
 
-        /* ── SPLASH FULL SCREEN ── */
+        /* ── SPLASH HEADER ── */
         .splash-overlay {
-          position: fixed; inset: 0; z-index: 9990;
-          background:
-            radial-gradient(ellipse 72% 58% at 12%  8%,  rgba(169,207,224,.70) 0%, transparent 55%),
-            radial-gradient(ellipse 65% 60% at 88%  5%,  rgba(181,196,177,.65) 0%, transparent 50%),
-            radial-gradient(ellipse 60% 68% at 5%   70%, rgba(127,184,212,.60) 0%, transparent 52%),
-            radial-gradient(ellipse 68% 58% at 90%  82%, rgba(181,196,177,.55) 0%, transparent 50%),
-            linear-gradient(160deg, #D8EAF0 0%, #E5E8E2 40%, #D4E7EE 100%);
           display: flex; flex-direction: column;
           align-items: center; justify-content: center;
-          text-align: center; padding: 32px;
+          text-align: center; padding: 60px 32px 48px;
         }
         .splash-chip {
           background: rgba(255,255,255,.38);
@@ -823,7 +816,7 @@ def render_header() -> None:
 # ── Splash + Info modal ──────────────────────────────────────────────────────
 
 def render_start() -> None:
-    # Full-screen splash overlay (CSS fixed, covers Streamlit chrome)
+    # 스플래시 상단 타이틀
     st.markdown(
         """
         <div class="splash-overlay">
@@ -831,21 +824,24 @@ def render_start() -> None:
           <div style="font-size:3rem;margin-bottom:20px;filter:drop-shadow(0 4px 16px rgba(96,111,105,.25));">🎵</div>
           <div class="splash-title">플레이리스트로<br>순열 살펴보기</div>
           <div class="splash-desc">같은 곡, 다른 순서<br>플레이리스트로 순열을 알아봅시다</div>
-          <div style="font-size:.72rem;color:rgba(61,74,68,.55);letter-spacing:.6px;">made by mingyu kim</div>
+          <div style="font-size:.72rem;color:rgba(61,74,68,.55);letter-spacing:.6px;margin-bottom:0;">made by mingyu kim</div>
         </div>
-        <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;">
         """,
         unsafe_allow_html=True,
     )
 
-    col = st.columns([1, 2, 1])[1]
+    # 정보 입력 카드
+    _, col, _ = st.columns([1, 2, 1])
     with col:
         st.markdown(
             """
-            <div style="background:var(--glass-bg-s);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border:1px solid var(--glass-border);border-radius:var(--r-xl);padding:32px 28px;box-shadow:var(--shadow-lg),inset 0 1px 0 rgba(255,255,255,.82);">
+            <div style="background:var(--glass-bg-s);-webkit-backdrop-filter:saturate(180%) blur(20px);
+            backdrop-filter:saturate(180%) blur(20px);border:1px solid var(--glass-border);
+            border-radius:var(--r-xl);padding:28px 24px 8px;
+            box-shadow:var(--shadow-lg),inset 0 1px 0 rgba(255,255,255,.82);margin-bottom:4px;">
               <div style="font-size:.7rem;font-weight:700;color:var(--lb2);letter-spacing:.9px;text-transform:uppercase;margin-bottom:6px;">기본 정보 입력</div>
-              <div style="font-size:1.3rem;font-weight:900;margin-bottom:4px;color:var(--md-on-surface);">활동을 시작하기 전에</div>
-              <div style="font-size:.82rem;color:var(--md-on-surface-v);margin-bottom:20px;line-height:1.65;">아래 정보를 모두 입력해야 활동을 시작할 수 있어요.</div>
+              <div style="font-size:1.25rem;font-weight:900;margin-bottom:4px;color:var(--md-on-surface);">활동을 시작하기 전에</div>
+              <div style="font-size:.82rem;color:var(--md-on-surface-v);margin-bottom:16px;line-height:1.65;">아래 정보를 모두 입력해야 활동을 시작할 수 있어요.</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -875,8 +871,7 @@ def render_start() -> None:
             if st.button("🔐 교사용 대시보드", use_container_width=True):
                 set_query_page("teacher")
                 st.rerun()
-
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
 
 
 # ── Nav buttons ──────────────────────────────────────────────────────────────
