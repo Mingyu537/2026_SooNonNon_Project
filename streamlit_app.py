@@ -264,21 +264,45 @@ ANIMATED_BG = """
 
 # ── HTML patchers ─────────────────────────────────────────────────────────────
 
-def _patch_student(html: str) -> str:
-    html = html.replace("<head>", "<head>\n" + BRIDGE_SCRIPT, 1)
-    # Inject animated background blobs right after <body>
-    html = html.replace("<body>", "<body>\n" + ANIMATED_BG, 1)
-    # Fix teacher redirect: navigate parent instead of iframe
-    html = html.replace(
-        "window.location.replace(result.url);",
-        "window.__navigateParent(result.url);",
+import re as _re
+
+
+def _remove_teacher_elements(html: str) -> str:
+    """교사용 대시보드 관련 HTML/JS를 모두 제거합니다. student.html 파일은 건드리지 않습니다."""
+
+    # 1) 스플래시 화면 교사 버튼
+    html = _re.sub(
+        r'<button[^>]*class="splash-teacher"[^>]*>.*?</button>',
+        "", html, flags=_re.DOTALL
     )
+
+    # 2) 비밀번호 모달 전체 (pw-overlay div + 자식 요소)
+    html = _re.sub(
+        r'<div[^>]*id="pw-overlay"[^>]*>.*?</div>\s*</div>',
+        "", html, flags=_re.DOTALL
+    )
+
+    # 3) 교사 관련 JS 함수 블록 (openPwModal / closePwModal / checkPw)
+    html = _re.sub(
+        r'/\* ════ 교사 비번 ════ \*/.*?\.checkTeacherPassword\(input\);[\s\n]*\}',
+        "", html, flags=_re.DOTALL
+    )
+
+    # 4) window 전역 노출에서 교사 함수 참조 제거
+    for ref in ["window.openPwModal=openPwModal", "window.closePwModal=closePwModal", "window.checkPw=checkPw"]:
+        html = html.replace(" " + ref + ";", "")
+        html = html.replace(ref + ";", "")
+
     return html
 
 
-def _patch_teacher(html: str) -> str:
+def _patch_student(html: str) -> str:
+    # 1) API 브리지 주입
     html = html.replace("<head>", "<head>\n" + BRIDGE_SCRIPT, 1)
+    # 2) 일렁이는 배경 애니메이션 주입
     html = html.replace("<body>", "<body>\n" + ANIMATED_BG, 1)
+    # 3) 교사용 대시보드 요소 완전 제거
+    html = _remove_teacher_elements(html)
     return html
 
 
