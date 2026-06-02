@@ -295,26 +295,11 @@ def _load(filename: str, patcher) -> str:
     return patcher(path.read_text(encoding="utf-8"))
 
 
-# ── Page routing ──────────────────────────────────────────────────────────────
-
-def _get_page() -> str:
-    try:
-        return str(st.query_params.get("page", "student"))
-    except Exception:
-        params = st.experimental_get_query_params()  # type: ignore[attr-defined]
-        return (params.get("page", ["student"]) or ["student"])[0]
-
-
-# ── Render ────────────────────────────────────────────────────────────────────
+# ── Render (교사용 대시보드 제거 — 학생 페이지만 서빙) ──────────────────────────
 
 st.markdown(HIDE_CSS, unsafe_allow_html=True)
 
-page = _get_page()
-
-if page == "teacher":
-    html = _load("teacher.html", _patch_teacher)
-else:
-    html = _load("student.html", _patch_student)
+html = _load("student.html", _patch_student)
 
 # height=1 → DOM 흐름에서는 1px만 차지
 # iframe 내부 JS가 position:fixed로 확장해 뷰포트 전체를 덮음
