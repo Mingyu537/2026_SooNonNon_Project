@@ -24,11 +24,18 @@ app.add_middleware(
 
 
 def _teacher_password() -> str:
+    # 환경변수 > secrets > 기본값 순서로 확인
+    env_pw = os.environ.get("TEACHER_PASSWORD", "")
+    if env_pw:
+        return env_pw
     try:
         import streamlit as st  # type: ignore
-        return str(st.secrets.get("TEACHER_PASSWORD", DEFAULT_TEACHER_PASSWORD))
+        secret_pw = st.secrets.get("TEACHER_PASSWORD", "")
+        if secret_pw:
+            return str(secret_pw)
     except Exception:
-        return os.environ.get("TEACHER_PASSWORD", DEFAULT_TEACHER_PASSWORD)
+        pass
+    return DEFAULT_TEACHER_PASSWORD  # "math2026"
 
 
 @app.post("/api/upsertSession")
