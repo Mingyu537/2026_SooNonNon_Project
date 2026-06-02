@@ -72,10 +72,16 @@ async def api_problem_board(classCode: str = ""):
     return get_problem_board(classCode)
 
 
+@app.get("/api/health")
+async def health():
+    return {"status": "ok", "password_hint": f"length={len(_teacher_password())}"}
+
+
 @app.post("/api/checkTeacherPassword")
 async def api_check_pw(request: Request):
     body = await request.json()
-    pw = body.get("pw", "")
-    if pw == _teacher_password():
+    pw = str(body.get("pw", "")).strip()
+    expected = _teacher_password().strip()
+    if pw == expected:
         return {"ok": True, "url": "?page=teacher"}
     return {"ok": False}

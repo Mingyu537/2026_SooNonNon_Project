@@ -1,6 +1,7 @@
 """Streamlit launcher — serves original HTML pages via FastAPI backend."""
 from __future__ import annotations
 
+import os
 import socket
 import threading
 import time
@@ -27,6 +28,18 @@ def _port_in_use(port: int) -> bool:
         return s.connect_ex(("localhost", port)) == 0
 
 
+def _get_local_ip() -> str:
+    """LAN에서 접속할 수 있는 실제 IP 주소를 반환합니다."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+
 def _start_api(port: int) -> None:
     import uvicorn
     from api import app as api_app
@@ -37,11 +50,16 @@ if "api_server_started" not in st.session_state:
     if not _port_in_use(API_PORT):
         t = threading.Thread(target=_start_api, args=(API_PORT,), daemon=True)
         t.start()
-        for _ in range(20):
+        for _ in range(30):          # 최대 3초 대기
             if _port_in_use(API_PORT):
                 break
             time.sleep(0.1)
     st.session_state["api_server_started"] = True
+
+# ── API base URL: Python이 직접 주입 (srcdoc iframe은 parent.location 접근 불가) ──
+# 환경변수 API_HOST가 있으면 우선 사용 (Streamlit Cloud 등 외부 배포용)
+_api_host = os.environ.get("API_HOST", _get_local_ip())
+API_BASE = f"http://{_api_host}:{API_PORT}"
 
 # ── Bridge script: replaces google.script.run with fetch() ───────────────────
 
@@ -49,10 +67,8 @@ BRIDGE_SCRIPT = f"""
 <script>
 /* ════ Google Apps Script → FastAPI Bridge ════ */
 (function () {{
-  var _port = '{API_PORT}';
-  var _host = 'localhost';
-  try {{ _host = (window.parent || window).location.hostname || 'localhost'; }} catch(e) {{}}
-  var API_BASE = (window.parent || window).location.protocol + '//' + _host + ':' + _port;
+  /* API_BASE는 Python이 서버 IP를 직접 주입 — srcdoc iframe 제약 우회 */
+  var API_BASE = '{API_BASE}';
 
   function _post(path, body) {{
     return fetch(API_BASE + path, {{
@@ -108,11 +124,19 @@ BRIDGE_SCRIPT = f"""
   }};
 
   /* ── Teacher page navigation helper ── */
+  /* srcdoc iframe에서 parent.location 접근이 막히므로 API_BASE의 호스트를 활용 */
   window.__navigateParent = function(url) {{
+    /* url 예: "?page=teacher" */
+    var query = url.replace(/^[^?]*/, '');   /* "?page=teacher" */
+    /* API_BASE에서 호스트+포트 추출 → Streamlit 포트(8501)로 변환 */
+    var apiUrl  = new URL(API_BASE);
+    var stBase  = apiUrl.protocol + '//' + apiUrl.hostname + ':8501';
+    var target  = stBase + '/' + query;
     try {{
-      var base = (window.parent || window).location.href.split('?')[0];
-      (window.parent || window).location.href = base + '?' + url.replace(/^.*\?/, '');
-    }} catch(e) {{ window.location.href = url; }}
+      (window.parent || window).location.href = target;
+    }} catch(e) {{
+      window.location.href = target;
+    }}
   }};
 
   /* ── Full-screen iframe ── */
