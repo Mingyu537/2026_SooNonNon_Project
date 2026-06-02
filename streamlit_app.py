@@ -114,6 +114,44 @@ BRIDGE_SCRIPT = f"""
       (window.parent || window).location.href = base + '?' + url.replace(/^.*\?/, '');
     }} catch(e) {{ window.location.href = url; }}
   }};
+
+  /* ── Full-screen iframe ── */
+  /* iframe을 뷰포트 전체로 확장하고 Streamlit 크롬을 숨깁니다 */
+  function _makeFullscreen() {{
+    try {{
+      var f = window.frameElement;
+      if (!f) return;
+      f.style.cssText = [
+        'position:fixed', 'top:0', 'left:0',
+        'width:100vw', 'height:100vh',
+        'z-index:2147483647', 'border:none',
+        'margin:0', 'padding:0', 'display:block'
+      ].join('!important;') + '!important';
+      /* 부모 페이지의 Streamlit 요소 숨기기 */
+      try {{
+        var pdoc = window.parent.document;
+        if (!pdoc.getElementById('_st_hide')) {{
+          var s = pdoc.createElement('style');
+          s.id = '_st_hide';
+          s.textContent = [
+            '#MainMenu', 'footer', 'header',
+            '[data-testid="stToolbar"]',
+            '[data-testid="stDecoration"]',
+            '[data-testid="collapsedControl"]',
+            'section[data-testid="stSidebar"]',
+            '[data-testid="stStatusWidget"]'
+          ].join(',') + '{{display:none!important}}' +
+          'html,body{{overflow:hidden!important;margin:0!important;padding:0!important}}';
+          pdoc.head.appendChild(s);
+        }}
+      }} catch(e2) {{}}
+    }} catch(e) {{}}
+  }}
+  if (document.readyState === 'loading') {{
+    document.addEventListener('DOMContentLoaded', _makeFullscreen);
+  }} else {{
+    _makeFullscreen();
+  }}
 }})();
 /* ════ End Bridge ════ */
 </script>
@@ -185,6 +223,6 @@ if page == "teacher":
 else:
     html = _load("student.html", _patch_student)
 
-# height=900 + scrolling=True → iframe fills viewport and scrolls internally
-# (the original HTML already has position:sticky header + scrollable content)
-components.html(html, height=900, scrolling=True)
+# height=1 → DOM 흐름에서는 1px만 차지
+# iframe 내부 JS가 position:fixed로 확장해 뷰포트 전체를 덮음
+components.html(html, height=1, scrolling=False)
