@@ -145,11 +145,14 @@ BRIDGE_SCRIPT = f"""
     try {{
       var f = window.frameElement;
       if (!f) return;
+      /* scrolling 속성 제거 → 브라우저 기본(auto) 스크롤 허용 */
+      f.removeAttribute('scrolling');
       f.style.cssText = [
         'position:fixed', 'top:0', 'left:0',
         'width:100vw', 'height:100vh',
         'z-index:2147483647', 'border:none',
-        'margin:0', 'padding:0', 'display:block'
+        'margin:0', 'padding:0', 'display:block',
+        'overflow:auto'
       ].join('!important;') + '!important';
       /* 부모 페이지의 Streamlit 요소 숨기기 */
       try {{
@@ -193,6 +196,15 @@ section[data-testid="stSidebar"] { display: none !important; }
 .block-container { padding: 0 !important; max-width: 100% !important; }
 [data-testid="stVerticalBlock"] { gap: 0 !important; }
 iframe { display: block; }
+</style>
+"""
+
+# iframe 내부 스크롤 보장 CSS — _patch_student에서 <head>에 주입
+SCROLL_FIX_CSS = """
+<style>
+/* iframe 안에서 세로 스크롤이 되도록 보장 */
+html { height: 100%; overflow-y: auto !important; }
+body { min-height: 100%; overflow-y: visible !important; }
 </style>
 """
 
@@ -297,8 +309,8 @@ def _remove_teacher_elements(html: str) -> str:
 
 
 def _patch_student(html: str) -> str:
-    # 1) API 브리지 주입
-    html = html.replace("<head>", "<head>\n" + BRIDGE_SCRIPT, 1)
+    # 1) API 브리지 + 스크롤 보장 CSS 주입
+    html = html.replace("<head>", "<head>\n" + BRIDGE_SCRIPT + SCROLL_FIX_CSS, 1)
     # 2) 일렁이는 배경 애니메이션 주입
     html = html.replace("<body>", "<body>\n" + ANIMATED_BG, 1)
     # 3) 교사용 대시보드 요소 완전 제거
@@ -327,4 +339,4 @@ html = _load("student.html", _patch_student)
 
 # height=1 → DOM 흐름에서는 1px만 차지
 # iframe 내부 JS가 position:fixed로 확장해 뷰포트 전체를 덮음
-components.html(html, height=1, scrolling=False)
+components.html(html, height=800, scrolling=True)
