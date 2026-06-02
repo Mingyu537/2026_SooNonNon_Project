@@ -369,7 +369,39 @@ loadPeerProblems        = function(){ _showMyProblem(); };
   if (btn) btn.textContent = '🎓 오늘의 학습 끝내기';
 })();
 
-/* ── submitAll 재정의: API 없이 즉시 완료 화면 표시 ── */
+/* ── 로딩 스피너 스타일 ── */
+(function() {
+  var s = document.createElement('style');
+  s.textContent = [
+    '@keyframes _spin { to { transform: rotate(360deg); } }',
+    '#_submit-spinner {',
+    '  display:none; flex-direction:column; align-items:center;',
+    '  justify-content:center; gap:16px; padding:32px 0;',
+    '}',
+    '#_submit-spinner ._ring {',
+    '  width:52px; height:52px; border-radius:50%;',
+    '  border:5px solid rgba(58,139,175,.2);',
+    '  border-top-color:var(--lb2,#3A8BAF);',
+    '  animation:_spin .8s linear infinite;',
+    '}',
+    '#_submit-spinner ._txt {',
+    '  font-size:.88rem; font-weight:600;',
+    '  color:var(--md-on-surface-v,#3D4A44);',
+    '}'
+  ].join('');
+  document.head.appendChild(s);
+
+  /* 스피너 엘리먼트를 ok-card 앞에 삽입 */
+  var okCard = document.getElementById('ok-card');
+  if (okCard) {
+    var spinner = document.createElement('div');
+    spinner.id = '_submit-spinner';
+    spinner.innerHTML = '<div class="_ring"></div><div class="_txt">잠시만요...</div>';
+    okCard.parentNode.insertBefore(spinner, okCard);
+  }
+})();
+
+/* ── submitAll 재정의: 스피너 2초 → 완료 카드 표시 ── */
 submitAll = function() {
   var allChk = ['chk1','chk2','chk3','chk4','chk5'].every(function(id) {
     var el = document.getElementById(id);
@@ -377,12 +409,19 @@ submitAll = function() {
   });
   if (!allChk) { showToast('자기 점검 항목을 모두 확인하세요.'); return; }
 
-  /* 버튼 숨기고 완료 카드 표시 */
+  /* 버튼 숨기고 스피너 표시 */
   var btn = document.getElementById('sub-btn');
   if (btn) btn.style.display = 'none';
-  var okCard = document.getElementById('ok-card');
-  if (okCard) okCard.style.display = 'block';
-  showToast('🎵 오늘 수업도 수고했어요!');
+  var spinner = document.getElementById('_submit-spinner');
+  if (spinner) spinner.style.display = 'flex';
+
+  /* 2초 후 스피너 숨기고 완료 카드 표시 */
+  setTimeout(function() {
+    if (spinner) spinner.style.display = 'none';
+    var okCard = document.getElementById('ok-card');
+    if (okCard) okCard.style.display = 'block';
+    showToast('🎵 오늘 수업도 수고했어요!');
+  }, 2000);
 };
 
 /* ── 저장 중 배지 숨기기 ── */
