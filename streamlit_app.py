@@ -326,41 +326,44 @@ _PEER_BLOCK = (
     '    </div>'
 )
 
-# 교체될 내용: 우리 조 문제 표시 카드 + JS로 Step 4 내용을 동적으로 채움
-_MY_PROB_BLOCK = '''    <div style="background:var(--md-primary-cont);border:1.5px solid rgba(58,139,175,.3);border-radius:var(--r-md);padding:18px;margin-bottom:18px;">
+# 교체될 내용: 우리 조 문제 표시 카드만 (스크립트는 </body> 직전에 주입)
+_MY_PROB_HTML = '''    <div style="background:var(--md-primary-cont);border:1.5px solid rgba(58,139,175,.3);border-radius:var(--r-md);padding:18px;margin-bottom:18px;">
       <div style="font-size:.88rem;font-weight:800;color:var(--md-primary);margin-bottom:14px;">📋 우리 조가 만든 문제 (STEP 4)</div>
       <div id="my-problem-display">
-        <div style="font-size:.82rem;color:var(--md-on-surface-v);font-style:italic;">Step 4를 완료하면 여기에 우리 조 문제가 표시됩니다.</div>
+        <div style="font-size:.82rem;color:var(--md-on-surface-v);font-style:italic;">Step 4에서 문제를 작성하면 여기에 표시됩니다.</div>
       </div>
-    </div>
-    <script>
-    /* Step 5 진입 시 우리 조 문제를 Step 4 입력값에서 가져와 표시 */
-    function _showMyProblem() {
-      var display = document.getElementById('my-problem-display');
-      if (!display) return;
-      var stmt    = (document.getElementById('s-prob-statement') || {}).value || '';
-      var formula = (document.getElementById('s-prob-formula')   || {}).value || '';
-      var explain = (document.getElementById('s-prob-explain')   || {}).value || '';
-      var probConds = ['pc1','pc2','pc3','pc4','pc5','pc6']
-        .filter(function(id){ var el=document.getElementById(id); return el && el.checked; })
-        .map(function(id){ var el=document.getElementById(id); return el ? el.value : ''; })
-        .join(' + ');
-      if (!stmt.trim()) {
-        display.innerHTML = '<div style="font-size:.82rem;color:var(--md-on-surface-v);font-style:italic;">Step 4에서 문제를 작성하면 여기에 표시됩니다.</div>';
-        return;
-      }
-      function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-      display.innerHTML =
-        (probConds ? '<div style="font-size:.72rem;font-weight:700;color:var(--md-on-surface-v);margin-bottom:8px;">선택 조건: ' + _esc(probConds) + '</div>' : '') +
-        '<div style="font-size:.95rem;font-weight:700;line-height:1.75;white-space:pre-wrap;color:var(--md-on-surface);margin-bottom:12px;padding:12px 14px;background:rgba(255,255,255,.55);border-radius:12px;border:1px solid rgba(255,255,255,.65);">' + _esc(stmt) + '</div>' +
-        (formula ? '<div style="font-size:.72rem;font-weight:700;color:var(--md-on-surface-v);margin-bottom:4px;">경우의 수를 구하는 식</div><div style="font-size:.88rem;margin-bottom:12px;padding:8px 12px;background:rgba(255,255,255,.45);border-radius:10px;">' + _esc(formula) + '</div>' : '') +
-        (explain  ? '<div style="font-size:.72rem;font-weight:700;color:var(--md-on-surface-v);margin-bottom:4px;">풀이 과정 및 이유</div><div style="font-size:.85rem;white-space:pre-wrap;padding:8px 12px;background:rgba(255,255,255,.45);border-radius:10px;">' + _esc(explain) + '</div>' : '');
-    }
-    /* 원래 startPeerProblemPolling / stopPeerProblemPolling 을 우리 조 표시로 교체 */
-    function startPeerProblemPolling(){ _showMyProblem(); }
-    function stopPeerProblemPolling(){}
-    function loadPeerProblems(){ _showMyProblem(); }
-    </script>'''
+    </div>'''
+
+# 오버라이드 스크립트는 </body> 직전에 주입 → 원본 스크립트보다 나중에 실행되어 덮어씌워지지 않음
+_MY_PROB_SCRIPT = '''<script>
+/* ════ Step 5: 우리 조 문제 표시 (원본 스크립트 이후 실행) ════ */
+function _showMyProblem() {
+  var display = document.getElementById('my-problem-display');
+  if (!display) return;
+  var stmt    = (document.getElementById('s-prob-statement') || {}).value || '';
+  var formula = (document.getElementById('s-prob-formula')   || {}).value || '';
+  var explain = (document.getElementById('s-prob-explain')   || {}).value || '';
+  var probConds = ['pc1','pc2','pc3','pc4','pc5','pc6']
+    .filter(function(id){ var el=document.getElementById(id); return el && el.checked; })
+    .map(function(id){ var el=document.getElementById(id); return el ? el.value : ''; })
+    .join(' + ');
+  if (!stmt.trim()) {
+    display.innerHTML = '<div style="font-size:.82rem;color:var(--md-on-surface-v);font-style:italic;">Step 4에서 문제를 작성하면 여기에 표시됩니다.</div>';
+    return;
+  }
+  function _e(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  display.innerHTML =
+    (probConds ? '<div style="font-size:.72rem;font-weight:700;color:var(--md-on-surface-v);margin-bottom:8px;">선택 조건: ' + _e(probConds) + '</div>' : '') +
+    '<div style="font-size:.95rem;font-weight:700;line-height:1.75;white-space:pre-wrap;color:var(--md-on-surface);margin-bottom:12px;padding:12px 14px;background:rgba(255,255,255,.55);border-radius:12px;border:1px solid rgba(255,255,255,.65);">' + _e(stmt) + '</div>' +
+    (formula ? '<div style="font-size:.72rem;font-weight:700;color:var(--md-on-surface-v);margin-bottom:4px;">경우의 수를 구하는 식</div><div style="font-size:.88rem;margin-bottom:12px;padding:8px 12px;background:rgba(255,255,255,.45);border-radius:10px;">' + _e(formula) + '</div>' : '') +
+    (explain  ? '<div style="font-size:.72rem;font-weight:700;color:var(--md-on-surface-v);margin-bottom:4px;">풀이 과정 및 이유</div><div style="font-size:.85rem;white-space:pre-wrap;padding:8px 12px;background:rgba(255,255,255,.45);border-radius:10px;">' + _e(explain) + '</div>' : '');
+}
+/* 원본 함수 재정의 — 이 스크립트가 마지막에 실행되므로 확실히 override됨 */
+startPeerProblemPolling = function(){ _showMyProblem(); };
+stopPeerProblemPolling  = function(){};
+loadPeerProblems        = function(){ _showMyProblem(); };
+</script>
+'''
 
 
 def _patch_student(html: str) -> str:
@@ -370,8 +373,10 @@ def _patch_student(html: str) -> str:
     html = html.replace("<body>", "<body>\n" + ANIMATED_BG, 1)
     # 3) 교사용 대시보드 요소 완전 제거
     html = _remove_teacher_elements(html)
-    # 4) Step 5: 다른 조 문제 → 우리 조 문제 표시로 교체
-    html = html.replace(_PEER_BLOCK, _MY_PROB_BLOCK, 1)
+    # 4) Step 5: 다른 조 문제 칸 → 우리 조 문제 표시 카드로 교체
+    html = html.replace(_PEER_BLOCK, _MY_PROB_HTML, 1)
+    # 5) override 스크립트를 </body> 직전에 주입 (원본 스크립트보다 나중에 실행)
+    html = html.replace("</body>", _MY_PROB_SCRIPT + "</body>", 1)
     return html
 
 
