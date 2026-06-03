@@ -1,12 +1,13 @@
-"""Streamlit 진입점 — 배포된 Apps Script 웹앱으로 리다이렉트.
+"""Streamlit 진입점 — 배포된 Apps Script 웹앱을 전체화면 iframe으로 표시.
 
-Apps Script 웹앱이 이미 학생/교사 페이지를 모두 서빙하고
-Google Sheets에 실시간 저장하므로, Streamlit은 그 URL로 넘겨주기만 한다.
+Apps Script 웹앱이 학생/교사 페이지를 모두 서빙하고 Google Sheets에
+실시간 저장한다. Apps Script는 XFrameOptionsMode.ALLOWALL이라 iframe 가능.
 ?page=teacher 쿼리도 그대로 전달한다.
 """
 from __future__ import annotations
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="플레이리스트로 순열 살펴보기",
@@ -31,7 +32,7 @@ def _webapp_url() -> str:
     )
 
 
-# ── 쿼리 파라미터 전달 (?page=teacher 등) ─────────────────────────────────────
+# ── 대상 URL (?page=teacher 등 쿼리 전달) ─────────────────────────────────────
 target = _webapp_url()
 try:
     page = st.query_params.get("page", "")
@@ -40,36 +41,52 @@ try:
 except Exception:
     pass
 
-# ── Streamlit 크롬 숨기기 ─────────────────────────────────────────────────────
+# ── Streamlit 크롬 전부 숨기기 ────────────────────────────────────────────────
 st.markdown(
     """
     <style>
     #MainMenu, footer, header,
     [data-testid="stToolbar"], [data-testid="stDecoration"],
-    [data-testid="collapsedControl"], section[data-testid="stSidebar"]
-    { display: none !important; }
-    .block-container { padding: 0 !important; }
+    [data-testid="collapsedControl"], section[data-testid="stSidebar"],
+    [data-testid="stStatusWidget"] { display: none !important; }
+    .block-container { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+    [data-testid="stVerticalBlock"] { gap: 0 !important; }
+    html, body { overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# ── 최상위 창을 Apps Script 웹앱으로 이동 ────────────────────────────────────
-st.markdown(
+# ── Apps Script 웹앱을 전체화면 iframe으로 삽입 ──────────────────────────────
+# 내부 JS가 자신의 iframe(window.frameElement)을 뷰포트 전체로 확장한다.
+components.html(
     f"""
-    <div style="font-family:'Noto Sans KR',sans-serif;text-align:center;padding:60px 20px;color:#3D4A44;">
-      <div style="font-size:2.4rem;margin-bottom:16px;">🎵</div>
-      <div style="font-size:1.05rem;font-weight:700;margin-bottom:8px;">플레이리스트로 순열 살펴보기</div>
-      <div style="font-size:.85rem;color:#6E9170;">활동 페이지로 이동 중입니다…</div>
-      <div style="margin-top:18px;font-size:.8rem;">
-        자동으로 넘어가지 않으면
-        <a href="{target}" target="_top" style="color:#3A8BAF;font-weight:700;">여기를 눌러주세요</a>.
-      </div>
-    </div>
+    <iframe id="app-frame" src="{target}"
+            style="border:none;width:100%;height:100vh;display:block;"
+            allow="clipboard-read; clipboard-write"></iframe>
     <script>
-      /* 부모(최상위) 창 전체를 Apps Script 웹앱으로 이동 */
-      window.top.location.href = "{target}";
+      (function() {{
+        function fill() {{
+          try {{
+            var f = window.frameElement;   /* Streamlit이 만든 바깥 iframe */
+            if (f) {{
+              f.style.cssText = [
+                'position:fixed','top:0','left:0',
+                'width:100vw','height:100vh',
+                'border:none','margin:0','padding:0',
+                'z-index:2147483647','display:block'
+              ].join('!important;') + '!important';
+            }}
+          }} catch(e) {{}}
+          /* 내부 iframe도 뷰포트 전체 */
+          var inner = document.getElementById('app-frame');
+          if (inner) inner.style.height = '100vh';
+        }}
+        fill();
+        window.addEventListener('resize', fill);
+      }})();
     </script>
     """,
-    unsafe_allow_html=True,
+    height=900,
+    scrolling=False,
 )
