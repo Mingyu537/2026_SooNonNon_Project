@@ -462,12 +462,90 @@ def _load(filename: str, patcher) -> str:
     return patcher(path.read_text(encoding="utf-8"))
 
 
-# ── Render (교사용 대시보드 제거 — 학생 페이지만 서빙) ──────────────────────────
+# ── Page routing ──────────────────────────────────────────────────────────────
 
-st.markdown(HIDE_CSS, unsafe_allow_html=True)
+def _get_page() -> str:
+    """Read ?page= from query params. Returns 'teacher' or 'student'."""
+    try:
+        params = st.query_params
+        return str(params.get("page", "student")).lower()
+    except Exception:
+        return "student"
 
-html = _load("student.html", _patch_student)
 
-# height=1 → DOM 흐름에서는 1px만 차지
-# iframe 내부 JS가 position:fixed로 확장해 뷰포트 전체를 덮음
-components.html(html, height=800, scrolling=True)
+# ── Teacher dashboard ─────────────────────────────────────────────────────────
+
+def _teacher_password() -> str:
+    """Resolve teacher password: secrets > constants fallback."""
+    try:
+        pw = st.secrets.get("TEACHER_PASSWORD", "")
+        if pw:
+            return str(pw)
+    except Exception:
+        pass
+    try:
+        from constants import DEFAULT_TEACHER_PASSWORD
+        return DEFAULT_TEACHER_PASSWORD
+    except Exception:
+        return "math2026"
+
+
+def _patch_teacher(html: str) -> str:
+    """teacher.html에 브리지 + 배경 애니메이션을 주입합니다."""
+    html = html.replace("<head>", "<head>\n" + BRIDGE_SCRIPT + SCROLL_FIX_CSS, 1)
+    html = html.replace("<body>", "<body>\n" + ANIMATED_BG, 1)
+    return html
+
+
+def render_teacher_dashboard() -> None:
+    """비밀번호 게이트 → 원본 teacher.html 서빙."""
+
+    # ── 비밀번호 게이트 (Streamlit 레벨) ──────────────────────────────────────
+    if not st.session_state.get("teacher_authed"):
+        st.markdown("""
+        <style>
+        #MainMenu,footer,header,[data-testid="stToolbar"],[data-testid="stDecoration"],
+        [data-testid="collapsedControl"],section[data-testid="stSidebar"]
+        { display:none!important; }
+        .block-container { max-width:420px!important; padding-top:15vh!important; }
+        </style>
+        """, unsafe_allow_html=True)
+
+        st.markdown("### 🔐 교사용 대시보드")
+        pw = st.text_input("비밀번호", type="password", placeholder="교사 비밀번호 입력")
+        col_a, col_b = st.columns(2)
+        if col_a.button("입장하기 →", type="primary", use_container_width=True):
+            if pw.strip() == _teacher_password().strip():
+                st.session_state["teacher_authed"] = True
+                st.rerun()
+            else:
+                st.error("비밀번호가 올바르지 않습니다.")
+        if col_b.button("← 학생 화면으로", use_container_width=True):
+            try:
+                st.query_params["page"] = "student"
+            except Exception:
+                pass
+            st.rerun()
+        return
+
+    # ── 인증 완료 → 원본 teacher.html 서빙 ────────────────────────────────────
+    st.markdown(HIDE_CSS, unsafe_allow_html=True)
+    html = _load("teacher.html", _patch_teacher)
+    components.html(html, height=800, scrolling=True)
+
+
+# ── Render ─────────────────────────────────────────────────────────────────────
+
+_page = _get_page()
+
+if _page == "teacher":
+    render_teacher_dashboard()
+else:
+    # Student view — original logic unchanged
+    st.markdown(HIDE_CSS, unsafe_allow_html=True)
+
+    html = _load("student.html", _patch_student)
+
+    # height=1 → DOM 흐름에서는 1px만 차지
+    # iframe 내부 JS가 position:fixed로 확장해 뷰포트 전체를 덮음
+    components.html(html, height=800, scrolling=True)
