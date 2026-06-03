@@ -27,7 +27,7 @@ def _webapp_url() -> str:
         pass
     return (
         "https://script.google.com/macros/s/"
-        "AKfycbw6WLREBTNTIzofVQMo3B6UvLd19URWyGcAfH2SrkTmCmIPwSCdZCy9FfKnWG-PKbgItw"
+        "AKfycbwz_DirPjvqfOttS7iVty2Lk7FyCPvQVlZIYPpY0HEKY6yVdiM_3r_76omtydCevds"
         "/exec"
     )
 
