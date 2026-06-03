@@ -56,45 +56,56 @@ if "api_server_started" not in st.session_state:
             time.sleep(0.1)
     st.session_state["api_server_started"] = True
 
-# ── API base URL: Python이 직접 주입 (srcdoc iframe은 parent.location 접근 불가) ──
-# 환경변수 API_HOST가 있으면 우선 사용 (Streamlit Cloud 등 외부 배포용)
-_api_host = os.environ.get("API_HOST", _get_local_ip())
-API_BASE = f"http://{_api_host}:{API_PORT}"
+# ── Google Apps Script 웹앱 URL (브라우저가 직접 호출 → Cloud 배포 가능) ─────────
+# secrets에 SHEETS_WEBAPP_URL이 있으면 우선 사용, 없으면 아래 기본값
+def _webapp_url() -> str:
+    try:
+        u = st.secrets.get("SHEETS_WEBAPP_URL", "")
+        if u:
+            return str(u)
+    except Exception:
+        pass
+    return (
+        "https://script.google.com/macros/s/"
+        "AKfycbwlqctZCDXvqps6q5yJb2Nv_u3p_iATy3Vawv8Bn2V54j-zMeLkk8qgk5-cqzG5IScIXw"
+        "/exec"
+    )
 
-# ── Bridge script: replaces google.script.run with fetch() ───────────────────
+
+WEBAPP_URL = _webapp_url()
+
+# ── Bridge script: google.script.run → Apps Script 웹앱 직접 fetch ────────────
+# 브라우저가 Apps Script를 직접 호출하므로 로컬/클라우드 어디서나 동일하게 작동.
+# POST는 Content-Type: text/plain 으로 보내 CORS preflight를 회피한다.
 
 BRIDGE_SCRIPT = f"""
 <script>
-/* ════ Google Apps Script → FastAPI Bridge ════ */
+/* ════ Google Apps Script Bridge (직접 호출) ════ */
 (function () {{
-  /* API_BASE는 Python이 서버 IP를 직접 주입 — srcdoc iframe 제약 우회 */
-  var API_BASE = '{API_BASE}';
+  var WEBAPP_URL = '{WEBAPP_URL}';
 
-  function _post(path, body) {{
-    return fetch(API_BASE + path, {{
+  function _call(action, payload) {{
+    return fetch(WEBAPP_URL, {{
       method: 'POST',
-      headers: {{ 'Content-Type': 'application/json' }},
-      body: JSON.stringify(body)
+      headers: {{ 'Content-Type': 'text/plain;charset=utf-8' }},
+      body: JSON.stringify(Object.assign({{}}, payload || {{}}, {{ action: action }}))
     }}).then(function(r) {{ return r.json(); }});
-  }}
-  function _get(path) {{
-    return fetch(API_BASE + path).then(function(r) {{ return r.json(); }});
   }}
 
   var ENDPOINTS = {{
     upsertSession: function(sid, data) {{
-      return _post('/api/upsertSession', Object.assign({{}}, data, {{ sessionId: sid }}));
+      return _call('upsertSession', Object.assign({{}}, data, {{ sessionId: sid }}));
     }},
-    getSubmissions: function() {{ return _get('/api/getSubmissions'); }},
-    deleteSession: function(sid) {{ return _post('/api/deleteSession', {{ sessionId: sid }}); }},
+    getSubmissions: function() {{ return _call('getSubmissions', {{}}); }},
+    deleteSession: function(sid) {{ return _call('deleteSession', {{ sessionId: sid }}); }},
     getSavedSessionByIdentity: function(name, cls, group, members) {{
-      return _post('/api/getSavedSessionByIdentity', {{ name:name, cls:cls, group:group, members:members }});
+      return _call('getSavedSessionByIdentity', {{ name:name, cls:cls, group:group, members:members }});
     }},
     getProblemBoard: function(classCode) {{
-      return _get('/api/getProblemBoard?classCode=' + encodeURIComponent(classCode || ''));
+      return _call('getProblemBoard', {{ classCode: classCode || '' }});
     }},
     checkTeacherPassword: function(pw) {{
-      return _post('/api/checkTeacherPassword', {{ pw: pw }});
+      return _call('checkTeacherPassword', {{ pw: pw }});
     }}
   }};
 
